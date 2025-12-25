@@ -6,7 +6,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "submission_results")
-@Data
+@Getter  // ✅ ADD THIS
+@Setter  // ✅ ADD THIS
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -18,7 +19,7 @@ public class SubmissionResult {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "submission_id", nullable = false)
-    private Submission submission;
+    private Submission submission;  // ✅ This should now be recognized
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "testcase_id", nullable = false)

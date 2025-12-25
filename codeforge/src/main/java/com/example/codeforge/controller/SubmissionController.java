@@ -1,207 +1,76 @@
 package com.example.codeforge.controller;
 
-import com.example.codeforge.dto.SubmitCodeRequest;
-import com.example.codeforge.dto.SubmissionListResponse;
-import com.example.codeforge.dto.SubmissionResponse;
+import com.example.codeforge.dto.submission.SubmissionDetailResponse;
+import com.example.codeforge.dto.submission.SubmissionResponse;
+import com.example.codeforge.dto.submission.SubmitCodeRequest;
 import com.example.codeforge.service.SubmissionService;
 import com.example.codeforge.utils.ApiResponse;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/submissions")
-@Tag(name = "Submissions", description = "Code submission operations")
-@PreAuthorize("isAuthenticated()")
+@RequiredArgsConstructor
 @Slf4j
 public class SubmissionController {
-    
-    @Autowired
-    private SubmissionService submissionService;
-    
-    /**
-     * Submit code for a problem
-     * POST /api/submissions
-     */
+
+    private final SubmissionService submissionService;
+
+    // ✅ SUBMIT CODE
     @PostMapping
-    @Operation(summary = "Submit code", description = "Submit code for a problem execution")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<SubmissionResponse>> submitCode(
-            Authentication authentication,
-            @Valid @RequestBody SubmitCodeRequest request) {
-        
-        String username = authentication.getName();
-        log.info("User {} submitting code for problem {}", username, request.getProblemId());
-        
-        try {
-            SubmissionResponse submission = submissionService.submitCode(username, request);
-            
-            // Execute submission asynchronously
-            // For MVP: execute synchronously (simpler)
-            // For production: use @Async or thread pool
-            new Thread(() -> {
-                try {
-                    submissionService.executeSubmission(submission.getId());
-                } catch (Exception e) {
-                    log.error("Error in async execution: {}", e.getMessage());
-                }
-            }).start();
-            
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success(
-                            submission,
-                            "Code submitted successfully. Execution in progress..."
-                    ));
-        } catch (RuntimeException e) {
-            log.warn("Error submitting code: {}", e.getMessage());
-            
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            log.error("Unexpected error submitting code: {}", e.getMessage());
-            
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Error submitting code: " + e.getMessage()));
-        }
-    }
-    
-    /**
-     * Get submission by ID
-     * GET /api/submissions/{id}
-     */
-    @GetMapping("/{id}")
-    @Operation(summary = "Get submission details", description = "Retrieve submission details with test results")
-    public ResponseEntity<ApiResponse<SubmissionResponse>> getSubmissionById(
-            Authentication authentication,
-            @PathVariable Long id) {
-        
-        String username = authentication.getName();
-        log.info("User {} fetching submission {}", username, id);
-        
-        try {
-            SubmissionResponse submission = submissionService.getSubmissionById(username, id);
-            
-            return ResponseEntity.status(HttpStatus.OK)
-                    .body(ApiResponse.success(
-                            submission,
-                            "Submission retrieved successfully"
-                    ));
-        } catch (RuntimeException e) {
-            log.warn("Submission not found: {}", e.getMessage());
-            
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            log.error("Error fetching submission: {}", e.getMessage());
-            
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Error fetching submission: " + e.getMessage()));
-        }
-    }
-    
-    /**
-     * Get all submissions for user
-     * GET /api/submissions
-     */
-    @GetMapping
-    @Operation(summary = "Get all my submissions", description = "Retrieve all submissions made by the current user")
-    public ResponseEntity<ApiResponse<List<SubmissionListResponse>>> getUserSubmissions(
+            @RequestBody SubmitCodeRequest request,
             Authentication authentication) {
         
-        String username = authentication.getName();
-        log.info("Fetching all submissions for user {}", username);
+        log.info("User {} submitting code for problem {}", 
+                 authentication.getName(), request.getProblemId());
         
-        try {
-            List<SubmissionListResponse> submissions = submissionService.getUserSubmissions(username);
-            
-            return ResponseEntity.status(HttpStatus.OK)
-                    .body(ApiResponse.success(
-                            submissions,
-                            "Submissions retrieved successfully"
-                    ));
-        } catch (Exception e) {
-            log.error("Error fetching submissions: {}", e.getMessage());
-            
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Error fetching submissions: " + e.getMessage()));
-        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(
+                        submissionService.submit(
+                                authentication.getName(),
+                                request
+                        ),
+                        "Code submitted successfully"
+                ));
     }
-    
-    /**
-     * Get submissions for a specific problem
-     * GET /api/submissions/problem/{problemId}
-     */
-    @GetMapping("/problem/{problemId}")
-    @Operation(summary = "Get my submissions for a problem", 
-               description = "Retrieve all submissions for a specific problem")
-    public ResponseEntity<ApiResponse<List<SubmissionListResponse>>> getUserSubmissionsForProblem(
-            Authentication authentication,
-            @PathVariable Long problemId) {
+
+    // ✅ GET SUBMISSION DETAILS (with all testcase results)
+    @GetMapping("/{submissionId}")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<SubmissionDetailResponse> getSubmissionDetails(
+            @PathVariable Long submissionId,
+            Authentication authentication) {
         
-        String username = authentication.getName();
-        log.info("User {} fetching submissions for problem {}", username, problemId);
+        log.info("User {} fetching submission details: {}", 
+                 authentication.getName(), submissionId);
         
-        try {
-            List<SubmissionListResponse> submissions = 
-                    submissionService.getUserSubmissionsForProblem(username, problemId);
-            
-            return ResponseEntity.status(HttpStatus.OK)
-                    .body(ApiResponse.success(
-                            submissions,
-                            "Submissions retrieved successfully"
-                    ));
-        } catch (RuntimeException e) {
-            log.warn("Error fetching submissions: {}", e.getMessage());
-            
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            log.error("Error fetching submissions: {}", e.getMessage());
-            
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Error fetching submissions: " + e.getMessage()));
-        }
+        return ApiResponse.success(
+                submissionService.getSubmissionDetails(
+                        authentication.getName(),
+                        submissionId
+                ),
+                "Submission details fetched"
+        );
     }
-    
-    /**
-     * Get latest submission for a problem
-     * GET /api/submissions/problem/{problemId}/latest
-     */
-    @GetMapping("/problem/{problemId}/latest")
-    @Operation(summary = "Get latest submission", 
-               description = "Get the most recent submission for a problem")
-    public ResponseEntity<ApiResponse<SubmissionResponse>> getLatestSubmission(
-            Authentication authentication,
-            @PathVariable Long problemId) {
-        
-        String username = authentication.getName();
-        log.info("User {} fetching latest submission for problem {}", username, problemId);
-        
-        try {
-            SubmissionResponse submission = submissionService.getLatestSubmission(username, problemId);
-            
-            return ResponseEntity.status(HttpStatus.OK)
-                    .body(ApiResponse.success(
-                            submission,
-                            "Latest submission retrieved successfully"
-                    ));
-        } catch (RuntimeException e) {
-            log.warn("Error fetching latest submission: {}", e.getMessage());
-            
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            log.error("Error fetching latest submission: {}", e.getMessage());
-            
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Error fetching submission: " + e.getMessage()));
-        }
-    }
+    @GetMapping("/my")
+@PreAuthorize("isAuthenticated()")
+public ApiResponse<List<SubmissionResponse>> getMySubmissions(
+        Authentication authentication) {
+
+    return ApiResponse.success(
+        submissionService.getUserSubmissions(authentication.getName()),
+        "User submissions fetched"
+    );
+}
+
 }

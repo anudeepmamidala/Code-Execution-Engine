@@ -10,5 +10,5 @@ public interface SubmissionResultRepository extends JpaRepository<SubmissionResu
     
     List<SubmissionResult> findBySubmissionId(Long submissionId);
     
-    List<SubmissionResult> findBySubmissionIdAndPassed(Long submissionId, Boolean passed);
+    long countBySubmissionIdAndPassed(Long submissionId, Boolean passed);
 }
