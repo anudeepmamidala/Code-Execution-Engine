@@ -11,7 +11,7 @@ public class CodeExecutionUtil {
     private static final long TIMEOUT_SECONDS = 2;
     private static final int MAX_OUTPUT_CHARS = 10_000;
     private static final double FLOAT_EPS = 1e-5;
-    private static final String PYTHON_CMD = "python3";
+    private static final String PYTHON_CMD = "python";
 
     private CodeExecutionUtil() {}
 
@@ -62,7 +62,7 @@ public class CodeExecutionUtil {
                 );
             }
 
-            // stdin
+            // ✅ FIXED: stdin handling with proper newline conversion
             try (BufferedWriter writer =
                          new BufferedWriter(
                                  new OutputStreamWriter(
@@ -70,11 +70,18 @@ public class CodeExecutionUtil {
                                          StandardCharsets.UTF_8))) {
 
                 if (input != null && !input.isBlank()) {
-                    writer.write(input);
-                    if (!input.endsWith("\n")) writer.newLine();
+                    // ✅ Convert literal \n to actual newlines
+                    String processedInput = input.replace("\\n", "\n");
+                    writer.write(processedInput);
+                    
+                    // ✅ Ensure input ends with newline for proper EOF
+                    if (!processedInput.endsWith("\n")) {
+                        writer.write("\n");
+                    }
+                    writer.flush();
                 }
-                writer.flush();
-            }
+                // ✅ Close stdin to signal EOF to Python
+            } // auto-closes writer, which closes the output stream
 
             boolean finished =
                     process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -92,6 +99,8 @@ public class CodeExecutionUtil {
             String stdout = readStream(process.getInputStream());
             String stderr = readStream(process.getErrorStream());
             int exitCode = process.exitValue();
+
+
 
             // ❗ Correct runtime error detection
             if (exitCode != 0) {
@@ -126,6 +135,8 @@ public class CodeExecutionUtil {
 
     // ---------- JUDGING ----------
 
+    
+
     private static boolean judge(String stdout, String expected) {
         String out = normalize(stdout);
         String exp = normalize(expected);
@@ -144,7 +155,8 @@ public class CodeExecutionUtil {
     }
 
     private static boolean looksNumeric(String s) {
-        return s.matches("[-+]?\\d*\\.?\\d+");
+        // ✅ IMPROVED: Handle scientific notation and edge cases
+        return s.matches("[-+]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][-+]?\\d+)?");
     }
 
     private static String normalize(String s) {

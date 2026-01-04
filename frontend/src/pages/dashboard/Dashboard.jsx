@@ -1,69 +1,135 @@
-import { useEffect, useState } from "react";
-import { getDashboardSummaryApi } from "../../api/dashboardApi";
-
-const StatCard = ({ title, value }) => (
-  <div
-    style={{
-      background: "#111",
-      padding: 20,
-      borderRadius: 8,
-      minWidth: 180,
-    }}
-  >
-    <p style={{ color: "#aaa", marginBottom: 6 }}>{title}</p>
-    <h2 style={{ margin: 0 }}>{value}</h2>
-  </div>
-);
+import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import "./Dashboard.css";
 
 const Dashboard = () => {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    getDashboardSummaryApi()
-      .then(setData)
-      .catch(() => setError("Failed to load dashboard"));
-  }, []);
-
-  if (error) return <div>{error}</div>;
-  if (!data) return <div>Loading dashboard...</div>;
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Dashboard</h2>
+    <div className="dashboard">
+      <div className="container section">
+        
+        {/* Header */}
+        <div className="dashboard-header">
+          <h1>Welcome, {user?.username}! 👋</h1>
+          <p>Continue your coding interview preparation</p>
+        </div>
 
-      {/* CODING STATS */}
-      <h3 style={{ marginTop: 20 }}>Coding</h3>
-      <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-        <StatCard
-          title="Total Submissions"
-          value={data.totalSubmissions}
-        />
-        <StatCard
-          title="Successful Submissions"
-          value={data.successfulSubmissions}
-        />
-        <StatCard
-          title="Pass Rate (%)"
-          value={data.passRate}
-        />
-      </div>
+        {/* Stats Grid */}
+        <div className="grid grid-3">
+          <div className="stat-card primary">
+            <div>
+              <div className="stat-label">Coding Problems</div>
+              <div className="stat-value">12</div>
+            </div>
+            <div className="stat-icon">💻</div>
+          </div>
 
-      {/* BEHAVIORAL STATS */}
-      <h3 style={{ marginTop: 30 }}>Behavioral</h3>
-      <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-        <StatCard
-          title="Answers Given"
-          value={data.behavioralAnswersCount}
-        />
-        <StatCard
-          title="Avg Word Count"
-          value={Math.round(data.averageBehavioralWordCount)}
-        />
-        <StatCard
-          title="Avg STAR Score"
-          value={data.averageStarScore.toFixed(2)}
-        />
+          <div className="stat-card success">
+            <div>
+              <div className="stat-label">Submissions</div>
+              <div className="stat-value">24</div>
+            </div>
+            <div className="stat-icon">✅</div>
+          </div>
+
+          <div className="stat-card danger">
+            <div>
+              <div className="stat-label">Behavioral</div>
+              <div className="stat-value">8</div>
+            </div>
+            <div className="stat-icon">🎤</div>
+          </div>
+        </div>
+
+        {/* Content Grid */}
+        <div className="grid grid-2" style={{ marginTop: "2rem" }}>
+          
+          {/* Quick Actions */}
+          <div className="card">
+            <h3>🚀 Quick Actions</h3>
+            <div className="action-buttons">
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate("/problems")}
+              >
+                Start Coding Problem
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate("/behavioral")}
+              >
+                Practice Behavioral
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate("/submissions")}
+              >
+                Review Submissions
+              </button>
+            </div>
+          </div>
+
+          {/* Progress */}
+          <div className="card">
+            <h3>📊 Your Progress</h3>
+            <div className="progress-section">
+              <div className="progress-item">
+                <div className="flex-between" style={{ marginBottom: "0.5rem" }}>
+                  <span>Completion</span>
+                  <span className="badge badge-primary">65%</span>
+                </div>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: "65%" }}></div>
+                </div>
+              </div>
+
+              <div className="progress-item">
+                <div className="flex-between" style={{ marginBottom: "0.5rem" }}>
+                  <span>Success Rate</span>
+                  <span className="badge badge-success">78%</span>
+                </div>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: "78%", backgroundColor: "#10b981" }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Recent Activity */}
+        <div className="card" style={{ marginTop: "2rem" }}>
+          <h3>📝 Recent Activity</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Problem</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Two Sum</td>
+                <td><span className="badge badge-success">Solved</span></td>
+                <td>2 days ago</td>
+              </tr>
+              <tr>
+                <td>Longest Substring</td>
+                <td><span className="badge badge-success">Solved</span></td>
+                <td>3 days ago</td>
+              </tr>
+              <tr>
+                <td>Binary Tree Traversal</td>
+                <td><span className="badge badge-warning">Attempting</span></td>
+                <td>Today</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getMyBehavioralAnswersApi } from "../../api/behavioralApi";
+import "./Behavioral.css";
 
 const MyBehavioralAnswers = () => {
   const [answers, setAnswers] = useState([]);
@@ -20,40 +21,54 @@ const MyBehavioralAnswers = () => {
     load();
   }, []);
 
-  if (loading) return <div>Loading behavioral answers...</div>;
-  if (error) return <div>{error}</div>;
-  if (answers.length === 0) return <div>No answers submitted yet.</div>;
+  if (loading) return <div className="behavioral-loader">Loading answers...</div>;
+  if (error) return <div className="behavioral-error">{error}</div>;
+  if (answers.length === 0)
+    return <div className="behavioral-empty">No answers submitted yet.</div>;
 
   return (
-    <div style={{ maxWidth: 900, margin: "auto" }}>
-      <h2>My Behavioral Answers</h2>
+    <div className="behavioral-answers-container">
+      <h2 className="behavioral-title">My Behavioral Answers</h2>
 
-      {answers.map((a) => (
-        <div
-          key={a.answerId}
-          style={{
-            border: "1px solid #333",
-            borderRadius: 8,
-            padding: 16,
-            marginBottom: 20,
-            background: "#111",
-          }}
-        >
-          <p style={{ opacity: 0.7 }}>
-            Submitted on {new Date(a.createdAt).toLocaleString()}
-          </p>
+      <div className="answers-list">
+        {answers.map((a) => (
+          <div key={a.answerId} className="answer-card">
+            <div className="answer-header">
+              <span className="answer-date">
+                {new Date(a.createdAt).toLocaleString()}
+              </span>
+            </div>
 
-          <h4>Question</h4>
-          <p>{a.questionText}</p>
+            <div className="answer-content">
+              <div className="answer-section">
+                <h4 className="section-title">Question</h4>
+                <p className="section-text">{a.questionText}</p>
+              </div>
 
-          <h4>Your Answer</h4>
-          <p style={{ whiteSpace: "pre-wrap" }}>{a.answerText}</p>
+              <div className="answer-section">
+                <h4 className="section-title">Your Answer</h4>
+                <p className="section-text answer-text">{a.answerText}</p>
+              </div>
 
-          <p><b>Word Count:</b> {a.wordCount}</p>
-          <p><b>STAR Score:</b> {a.starScore} / 4</p>
-          <p><b>Feedback:</b> {a.feedback}</p>
-        </div>
-      ))}
+              <div className="answer-metrics">
+                <div className="metric">
+                  <span className="metric-label">Word Count:</span>
+                  <span className="metric-value">{a.wordCount}</span>
+                </div>
+                <div className="metric">
+                  <span className="metric-label">STAR Score:</span>
+                  <span className="metric-value">{a.starScore} / 4</span>
+                </div>
+              </div>
+
+              <div className="answer-feedback">
+                <strong>Feedback:</strong>
+                <p>{a.feedback}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

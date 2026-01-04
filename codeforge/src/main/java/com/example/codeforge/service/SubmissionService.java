@@ -94,9 +94,16 @@ public class SubmissionService {
         boolean allPassed = true;
         int passedCount = 0;
 
+        // ✅ Log submission start
+        log.info("Starting execution for submission {} with {} testcases", 
+                submission.getId(), testcases.size());
+
         for (Testcase tc : testcases) {
 
             long start = System.currentTimeMillis();
+
+            // ✅ Log testcase execution start
+            log.debug("Executing testcase {} for submission {}", tc.getId(), submission.getId());
 
             CodeExecutionUtil.ExecutionResult result =
                     CodeExecutionUtil.executeAndJudgePython(
@@ -107,16 +114,30 @@ public class SubmissionService {
 
             long execTime = System.currentTimeMillis() - start;
 
+            // ✅ Add detailed logging for debugging
+            log.debug("Testcase {} execution: verdict={}, passed={}, execTime={}ms",
+                    tc.getId(), result.verdict(), result.passed(), execTime);
+            
+            if (result.stderr() != null && !result.stderr().isEmpty()) {
+                log.debug("Testcase {} stderr: {}", tc.getId(), 
+                        result.stderr().length() > 200 ? result.stderr().substring(0, 200) + "..." : result.stderr());
+            }
+
             if ("ERROR".equals(result.verdict())) {
                 hasError = true;
                 allPassed = false;
+                log.warn("Testcase {} returned ERROR: {}", tc.getId(), result.stderr());
             } else if ("TIMEOUT".equals(result.verdict())) {
                 hasTimeout = true;
                 allPassed = false;
+                log.warn("Testcase {} TIMEOUT", tc.getId());
             } else if (!result.passed()) {
                 allPassed = false;
+                log.debug("Testcase {} FAILED - expected: {} got: {}", tc.getId(), 
+                        tc.getExpectedOutput(), result.stdout());
             } else {
                 passedCount++;
+                log.debug("Testcase {} PASSED", tc.getId());
             }
 
             SubmissionResult submissionResult = SubmissionResult.builder()
@@ -134,15 +155,19 @@ public class SubmissionService {
         if (hasError) {
             submission.setStatus(SubmissionStatus.ERROR);
             submission.setOutput("Runtime Error");
+            log.warn("Submission {} marked as ERROR", submission.getId());
         } else if (hasTimeout) {
             submission.setStatus(SubmissionStatus.FAILED);
             submission.setOutput("Time Limit Exceeded");
+            log.warn("Submission {} marked as TIMEOUT", submission.getId());
         } else if (allPassed) {
             submission.setStatus(SubmissionStatus.PASSED);
             submission.setOutput("Accepted");
+            log.info("Submission {} ACCEPTED - all testcases passed", submission.getId());
         } else {
             submission.setStatus(SubmissionStatus.FAILED);
             submission.setOutput(passedCount + "/" + testcases.size() + " testcases passed");
+            log.info("Submission {} FAILED - {} passed out of {}", submission.getId(), passedCount, testcases.size());
         }
 
         submissionRepository.save(submission);

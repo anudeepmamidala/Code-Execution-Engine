@@ -3,15 +3,20 @@ import {
   getBehavioralQuestionsApi,
   submitBehavioralAnswerApi,
 } from "../../api/behavioralApi";
+import "./Behavioral.css";
 
 const BehavioralQuestions = () => {
   const [questions, setQuestions] = useState([]);
   const [selected, setSelected] = useState(null);
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getBehavioralQuestionsApi().then(setQuestions);
+    getBehavioralQuestionsApi().then((data) => {
+      setQuestions(data);
+      setLoading(false);
+    });
   }, []);
 
   const submit = async () => {
@@ -29,45 +34,63 @@ const BehavioralQuestions = () => {
     setAnswer("");
   };
 
-  return (
-    <div>
-      <h2>Behavioral Questions</h2>
+  if (loading) return <div className="behavioral-loader">Loading questions...</div>;
 
-      <ul>
+  return (
+    <div className="behavioral-questions-container">
+      <h2 className="behavioral-title">Behavioral Questions</h2>
+
+      <div className="behavioral-questions-list">
         {questions.map((q) => (
-          <li key={q.id}>
-            <button onClick={() => {
+          <button
+            key={q.id}
+            className={`behavioral-question-btn ${selected?.id === q.id ? "active" : ""}`}
+            onClick={() => {
               setSelected(q);
               setResult(null);
-            }}>
-              {q.questionText}
-            </button>
-          </li>
+            }}
+          >
+            <span className="question-text">{q.questionText}</span>
+            <span className="question-arrow">→</span>
+          </button>
         ))}
-      </ul>
+      </div>
 
       {selected && (
-        <div style={{ marginTop: 20 }}>
+        <div className="behavioral-answer-section">
           <h3>{selected.questionText}</h3>
 
           <textarea
-            rows={6}
-            cols={70}
+            className="behavioral-textarea"
+            rows={8}
+            placeholder="Type your answer here..."
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
           />
 
-          <br />
-          <button onClick={submit}>Submit</button>
+          <button className="behavioral-submit-btn" onClick={submit}>
+            Submit Answer
+          </button>
         </div>
       )}
 
       {result && (
-        <div style={{ marginTop: 20 }}>
+        <div className="behavioral-feedback-section">
           <h3>Feedback</h3>
-          <p><b>Word Count:</b> {result.wordCount}</p>
-          <p><b>STAR Score:</b> {result.starScore} / 4</p>
-          <p><b>Feedback:</b> {result.feedback}</p>
+          <div className="feedback-grid">
+            <div className="feedback-item">
+              <span className="feedback-label">Word Count:</span>
+              <span className="feedback-value">{result.wordCount}</span>
+            </div>
+            <div className="feedback-item">
+              <span className="feedback-label">STAR Score:</span>
+              <span className="feedback-value">{result.starScore} / 4</span>
+            </div>
+          </div>
+          <div className="feedback-text">
+            <strong>Feedback:</strong>
+            <p>{result.feedback}</p>
+          </div>
         </div>
       )}
     </div>

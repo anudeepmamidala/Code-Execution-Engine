@@ -1,50 +1,64 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useState } from "react";
+import "./Navbar.css";
 
 const UserNavbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
+    setMenuOpen(false);
   };
 
   if (!user) return null;
 
   return (
-    <nav style={{ padding: "10px", borderBottom: "1px solid #ccc" }}>
-      <strong style={{ marginRight: 20 }}>CodeForge</strong>
+    <nav className="navbar navbar-user">
+      <div className="navbar-container">
+        
+        {/* Logo */}
+        <Link to="/dashboard" className="navbar-logo">
+          <span>🚀</span>
+          <span>CodeForge</span>
+        </Link>
 
-      <Link to="/dashboard" style={{ marginRight: 10 }}>
-        Dashboard
-      </Link>
+        {/* Desktop Menu */}
+        <div className="navbar-menu">
+          <Link to="/dashboard" className="navbar-link">Dashboard</Link>
+          <Link to="/problems" className="navbar-link">Problems</Link>
+          <Link to="/submissions" className="navbar-link">Submissions</Link>
+          
+          <div className="navbar-divider"></div>
+          
+          <Link to="/behavioral" className="navbar-link">Behavioral</Link>
+          <Link to="/behavioral/my-answers" className="navbar-link">My Answers</Link>
+          <Link to="/behavioral/stats" className="navbar-link">Stats</Link>
+        </div>
 
-      <Link to="/problems" style={{ marginRight: 10 }}>
-        Problems
-      </Link>
+        {/* User Menu */}
+        <div className="navbar-user-menu">
+          <div className="navbar-user-info" onClick={() => setMenuOpen(!menuOpen)}>
+            <span className="user-icon">👤</span>
+            <span className="username">{user.username}</span>
+            <span className="dropdown-arrow">▼</span>
+          </div>
 
-      <Link to="/submissions" style={{ marginRight: 10 }}>
-        My Submissions
-      </Link>
+          {menuOpen && (
+            <div className="navbar-dropdown">
+              <button onClick={handleLogout} className="dropdown-item logout-btn">
+                🚪 Logout
+              </button>
+            </div>
+          )}
+        </div>
 
-      <Link to="/behavioral" style={{ marginRight: 10 }}>
-        Behavioral Questions
-      </Link>
-
-      <Link to="/behavioral/my-answers" style={{ marginRight: 10 }}>
-        My Answers
-      </Link>
-
-      <Link to="/behavioral/stats" style={{ marginRight: 10 }}>
-        Behavioral Stats
-      </Link>
-
-      <span style={{ marginLeft: 20, marginRight: 10 }}>
-        {user.username}
-      </span>
-
-      <button onClick={handleLogout}>Logout</button>
+        {/* Mobile Menu Button */}
+        <button className="navbar-toggle">☰</button>
+      </div>
     </nav>
   );
 };
